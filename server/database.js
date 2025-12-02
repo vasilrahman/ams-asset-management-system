@@ -5,11 +5,19 @@ const path = require('path');
 let sequelize;
 
 if (process.env.DATABASE_URL) {
-  // Handle potential quotes in the URL string from some env providers
-  // This fixes the "Cannot read properties of null (reading 'replace')" error
-  const dbUrl = process.env.DATABASE_URL.replace(/['"]/g, '').trim();
+  let dbUrl = process.env.DATABASE_URL;
 
-  console.log(`Connecting to Postgres... (URL starts with: ${dbUrl.substring(0, 10)}...)`);
+  // Robustly extract the URL: looks for postgres:// or postgresql:// and ignores surrounding text/quotes
+  // This handles cases where the user pastes "psql postgres://..." or "'postgres://...'"
+  const urlMatch = dbUrl.match(/(postgres(?:ql)?:\/\/[^\s"']+)/);
+  if (urlMatch) {
+    dbUrl = urlMatch[1];
+  } else {
+    // Fallback cleanup if regex doesn't match (e.g. just quotes)
+    dbUrl = dbUrl.replace(/['"]/g, '').trim();
+  }
+
+  console.log(`Connecting to Postgres... (URL starts with: ${dbUrl.substring(0, 15)}...)`);
 
   sequelize = new Sequelize(dbUrl, {
     dialect: 'postgres',
