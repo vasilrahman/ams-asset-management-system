@@ -1,22 +1,35 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const path = require('path');
 
-// Initialize Sequelize with SQLite
-const sequelize = process.env.DATABASE_URL
-  ? new Sequelize(process.env.DATABASE_URL, {
+// Initialize Sequelize
+let sequelize;
+
+if (process.env.DATABASE_URL) {
+  // Handle potential quotes in the URL string from some env providers
+  // This fixes the "Cannot read properties of null (reading 'replace')" error
+  const dbUrl = process.env.DATABASE_URL.replace(/['"]/g, '').trim();
+
+  console.log(`Connecting to Postgres... (URL starts with: ${dbUrl.substring(0, 10)}...)`);
+
+  sequelize = new Sequelize(dbUrl, {
     dialect: 'postgres',
+    protocol: 'postgres',
     dialectOptions: {
       ssl: {
         require: true,
         rejectUnauthorized: false
       }
-    }
-  })
-  : new Sequelize({
+    },
+    logging: false
+  });
+} else {
+  console.log('Using local SQLite database');
+  sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: path.join(__dirname, 'database.sqlite'),
     logging: false
   });
+}
 
 // --- Models ---
 
@@ -76,7 +89,7 @@ const Asset = sequelize.define('Asset', {
   imageUrl: DataTypes.STRING,
   purchaseDate: DataTypes.DATEONLY,
   createdDate: DataTypes.DATEONLY,
-  addedBy: DataTypes.STRING, // Store name for simplicity, or could be FK
+  addedBy: DataTypes.STRING,
   isQrGenerated: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
