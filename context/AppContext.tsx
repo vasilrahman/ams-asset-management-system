@@ -39,7 +39,12 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider = ({ children }: { children?: ReactNode }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  // Initialize User from LocalStorage to prevent logout on reload
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+
   const [assets, setAssets] = useState<Asset[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [logs, setLogs] = useState<VerificationLog[]>([]);
@@ -84,13 +89,21 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
       const headers = { Authorization: `Bearer ${token}` };
 
       const assetsRes = await fetch(`${API_URL}/assets`, { headers });
-      if (assetsRes.ok) setAssets(await assetsRes.json());
+      if (assetsRes.ok) {
+        const assetsData = await assetsRes.json();
+        setAssets(assetsData);
+
+        // Extract Logs and Complaints from Assets (since they are included in the response)
+        // Handle both PascalCase (from Sequelize) and camelCase
+        const allLogs = assetsData.flatMap((a: any) => a.VerificationLogs || a.verificationLogs || []);
+        const allComplaints = assetsData.flatMap((a: any) => a.Complaints || a.complaints || []);
+
+        setLogs(allLogs);
+        setComplaints(allComplaints);
+      }
 
       const usersRes = await fetch(`${API_URL}/users`, { headers });
       if (usersRes.ok) setUsers(await usersRes.json());
-
-      // Logs and Complaints would be fetched similarly if endpoints existed
-      // For now, we'll keep them empty or mock them if needed
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -117,7 +130,11 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
         const data = await res.json();
         setToken(data.token);
         localStorage.setItem('token', data.token);
+
+        // Persist user to localStorage
         setCurrentUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
         navigate(data.user.role === 'ADMIN' ? '/dashboard' : '/staff/home');
       } else {
         alert('Invalid credentials');
@@ -132,6 +149,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     setToken(null);
     localStorage.removeItem('token');
     setCurrentUser(null);
+    localStorage.removeItem('user'); // Clear persisted user
     navigate('/');
   };
 
