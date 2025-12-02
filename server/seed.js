@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { sequelize, User, Asset, VerificationLog } = require('./database');
 const bcrypt = require('bcryptjs');
 
@@ -5,8 +6,6 @@ const seedDatabase = async () => {
     try {
         await sequelize.sync({ force: true }); // Reset DB
         console.log('Database cleared.');
-
-        // Create Users
         const adminPassword = await bcrypt.hash('admin@123', 10);
         const staffPassword = await bcrypt.hash('staff@123', 10);
 
