@@ -143,7 +143,7 @@ export const AdminAssetDetail = () => {
 
                                     // Deduplicate by ID
                                     const uniqueLogs = [...new Map([...globalLogs, ...embeddedLogs].map(item => [item.id, item])).values()];
-
+                                    console.log(uniqueLogs, 'uniqueLogs')
                                     // Sort by timestamp descending (newest first)
                                     uniqueLogs.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 

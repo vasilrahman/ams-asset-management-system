@@ -21,7 +21,11 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
     try {
         const newAsset = await Asset.create(req.body);
-        res.status(201).json(newAsset);
+        // Fetch with associations to keep frontend state consistent
+        const assetWithAssociations = await Asset.findByPk(newAsset.id, {
+            include: [VerificationLog, Complaint]
+        });
+        res.status(201).json(assetWithAssociations);
     } catch (error) {
         res.status(500).json({ message: 'Error creating asset', error: error.message });
     }
@@ -34,7 +38,9 @@ router.put('/:id', authenticateToken, async (req, res) => {
             where: { id: req.params.id }
         });
         if (updated) {
-            const updatedAsset = await Asset.findByPk(req.params.id);
+            const updatedAsset = await Asset.findByPk(req.params.id, {
+                include: [VerificationLog, Complaint]
+            });
             res.json(updatedAsset);
         } else {
             res.status(404).json({ message: 'Asset not found' });
