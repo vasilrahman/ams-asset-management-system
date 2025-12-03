@@ -7,219 +7,236 @@ import { jsPDF } from 'jspdf';
 import QRLib from 'qrcode'; // Real QR generation logic
 
 export const AdminAssetDetail = () => {
-  const { assets, currentRoute, navigate, updateAsset, deleteAsset, logs } = useApp();
-  const [asset, setAsset] = useState<any>(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const { assets, currentRoute, navigate, updateAsset, deleteAsset, logs } = useApp();
+    const [asset, setAsset] = useState<any>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  useEffect(() => {
-    if (currentRoute.params?.id) {
-      const found = assets.find(a => a.id === currentRoute.params.id);
-      setAsset(found);
-    }
-  }, [currentRoute, assets]);
+    useEffect(() => {
+        if (currentRoute.params?.id) {
+            const found = assets.find(a => a.id === currentRoute.params.id);
+            setAsset(found);
+        }
+    }, [currentRoute, assets]);
 
-  if (!asset) return <div className="text-slate-500 dark:text-slate-400">Loading...</div>;
+    if (!asset) return <div className="text-slate-500 dark:text-slate-400">Loading...</div>;
 
-  const handleDownloadPDF = async () => {
-    const doc = new jsPDF();
-    doc.setFillColor(79, 70, 229);
-    doc.rect(0, 0, 210, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.text("AMS Asset Card", 20, 25);
-    
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    let y = 60;
-    doc.text(`ID: ${asset.id}`, 20, y); y+=10;
-    doc.text(`Name: ${asset.name}`, 20, y); y+=10;
-    doc.text(`Serial: ${asset.serialNumber}`, 20, y); y+=10;
-    
-    // Real QR in PDF (High Quality)
-    try {
-        const qrDataUrl = await QRLib.toDataURL(
-            JSON.stringify({ assetId: asset.id, url: `${window.location.origin}/assets/detail?id=${asset.id}` }), 
-            { width: 600, margin: 2, errorCorrectionLevel: 'H' }
-        );
-        doc.addImage(qrDataUrl, 'PNG', 130, 50, 60, 60);
-    } catch(e) {
-        console.error("PDF QR Error", e);
-    }
+    const handleDownloadPDF = async () => {
+        const doc = new jsPDF();
+        doc.setFillColor(79, 70, 229);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.text("AMS Asset Card", 20, 25);
 
-    doc.save(`QR_${asset.id}.pdf`);
-  };
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(12);
+        let y = 60;
+        doc.text(`ID: ${asset.id}`, 20, y); y += 10;
+        doc.text(`Name: ${asset.name}`, 20, y); y += 10;
+        doc.text(`Serial: ${asset.serialNumber}`, 20, y); y += 10;
 
-  const handleGenerateQR = () => {
-    updateAsset(asset.id, { isQrGenerated: true });
-    handleDownloadPDF();
-  };
+        // Real QR in PDF (High Quality)
+        try {
+            const qrDataUrl = await QRLib.toDataURL(
+                JSON.stringify({ assetId: asset.id, url: `${window.location.origin}/assets/detail?id=${asset.id}` }),
+                { width: 600, margin: 2, errorCorrectionLevel: 'H' }
+            );
+            doc.addImage(qrDataUrl, 'PNG', 130, 50, 60, 60);
+        } catch (e) {
+            console.error("PDF QR Error", e);
+        }
 
-  const handleDelete = () => {
-      deleteAsset(asset.id);
-      setShowDeleteModal(false);
-      navigate('/assets');
-  };
+        doc.save(`QR_${asset.id}.pdf`);
+    };
 
-  return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20 relative">
-      {/* Breadcrumb / Back */}
-      <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/assets')} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 transition-colors">
-              <ArrowLeft size={24} />
-          </button>
-          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-             <span>Assets</span>
-             <span>/</span>
-             <span className="font-semibold text-slate-800 dark:text-slate-200">{asset.id}</span>
-          </div>
-      </div>
+    const handleGenerateQR = () => {
+        updateAsset(asset.id, { isQrGenerated: true });
+        handleDownloadPDF();
+    };
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* LEFT COLUMN: Image & Main Info */}
-          <div className="lg:col-span-2 space-y-6">
-              {/* Header Card */}
-              <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
-                   <div className="flex flex-col md:flex-row gap-8">
-                       <div className="w-full md:w-64 h-64 bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-600 flex items-center justify-center">
-                           {asset.imageUrl ? (
-                               <img src={asset.imageUrl} className="w-full h-full object-cover" alt={asset.name} />
-                           ) : (
-                               <Package className="text-slate-300 dark:text-slate-500" size={64} />
-                           )}
-                       </div>
-                       <div className="flex-1 space-y-6">
-                           <div>
-                               <div className="flex justify-between items-start">
-                                    <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold uppercase tracking-wider rounded-lg mb-2 inline-block">{asset.category}</span>
-                                    <span className={`px-3 py-1 rounded-full text-sm font-semibold border flex items-center gap-2 ${
-                                        asset.status === 'Active' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800'
-                                    }`}>
-                                        <span className={`w-2 h-2 rounded-full ${asset.status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
-                                        {asset.status}
-                                    </span>
-                               </div>
-                               <h1 className="text-4xl font-bold text-slate-800 dark:text-white mb-1">{asset.name}</h1>
-                               <p className="text-slate-400 font-mono text-base">{asset.id}</p>
-                           </div>
+    const handleDelete = () => {
+        deleteAsset(asset.id);
+        setShowDeleteModal(false);
+        navigate('/assets');
+    };
 
-                           <div className="grid grid-cols-2 gap-y-4 gap-x-8 pt-4 border-t border-slate-50 dark:border-slate-700">
-                               <div>
-                                   <p className="text-xs text-slate-400 uppercase font-bold mb-1">Serial Number</p>
-                                   <p className="font-medium text-slate-700 dark:text-slate-200">{asset.serialNumber}</p>
-                               </div>
-                               <div>
-                                   <p className="text-xs text-slate-400 uppercase font-bold mb-1">Added By</p>
-                                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-medium">
-                                       <User size={16} className="text-indigo-500"/> {asset.addedBy}
-                                   </div>
-                               </div>
-                               <div>
-                                   <p className="text-xs text-slate-400 uppercase font-bold mb-1">Created Date</p>
-                                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-medium">
-                                       <Calendar size={16} className="text-indigo-500"/> {new Date(asset.createdDate).toLocaleDateString()}
-                                   </div>
-                               </div>
-                               <div>
-                                   <p className="text-xs text-slate-400 uppercase font-bold mb-1">Last Verification</p>
-                                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-medium">
-                                       <CheckCircle size={16} className="text-emerald-500"/> {asset.lastVerifiedDate ? new Date(asset.lastVerifiedDate).toLocaleDateString() : 'Never'}
-                                   </div>
-                               </div>
-                           </div>
-                       </div>
-                   </div>
-              </div>
+    return (
+        <div className="max-w-6xl mx-auto space-y-6 pb-20 relative">
+            {/* Breadcrumb / Back */}
+            <div className="flex items-center gap-4">
+                <button onClick={() => navigate('/assets')} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400 transition-colors">
+                    <ArrowLeft size={24} />
+                </button>
+                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <span>Assets</span>
+                    <span>/</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{asset.id}</span>
+                </div>
+            </div>
 
-              {/* History Panel */}
-              <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-colors duration-200">
-                   <div className="p-6 border-b border-slate-100 dark:border-slate-700">
-                       <h3 className="font-bold text-slate-800 dark:text-white">Verification History</h3>
-                   </div>
-                   <div className="p-6">
-                       {logs.filter(l => l.assetId === asset.id).length > 0 ? (
-                           <div className="space-y-4">
-                               {logs.filter(l => l.assetId === asset.id).map(log => (
-                                   <div key={log.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl">
-                                       <div className="flex items-center gap-3">
-                                           <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-emerald-500 shadow-sm">
-                                               <CheckCircle size={20} />
-                                           </div>
-                                           <div>
-                                               <p className="font-bold text-slate-700 dark:text-slate-200 text-sm">Verified by {log.verifiedBy}</p>
-                                               <p className="text-xs text-slate-400">{new Date(log.timestamp).toLocaleString()}</p>
-                                           </div>
-                                       </div>
-                                   </div>
-                               ))}
-                           </div>
-                       ) : (
-                           <div className="text-center py-8 text-slate-400">
-                               <p>No verification history found.</p>
-                           </div>
-                       )}
-                   </div>
-              </div>
-          </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* LEFT COLUMN: Image & Main Info */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Header Card */}
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
+                        <div className="flex flex-col md:flex-row gap-8">
+                            <div className="w-full md:w-64 h-64 bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-600 flex items-center justify-center">
+                                {asset.imageUrl ? (
+                                    <img src={asset.imageUrl} className="w-full h-full object-cover" alt={asset.name} />
+                                ) : (
+                                    <Package className="text-slate-300 dark:text-slate-500" size={64} />
+                                )}
+                            </div>
+                            <div className="flex-1 space-y-6">
+                                <div>
+                                    <div className="flex justify-between items-start">
+                                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold uppercase tracking-wider rounded-lg mb-2 inline-block">{asset.category}</span>
+                                        <span className={`px-3 py-1 rounded-full text-sm font-semibold border flex items-center gap-2 ${asset.status === 'Active' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800'
+                                            }`}>
+                                            <span className={`w-2 h-2 rounded-full ${asset.status === 'Active' ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+                                            {asset.status}
+                                        </span>
+                                    </div>
+                                    <h1 className="text-4xl font-bold text-slate-800 dark:text-white mb-1">{asset.name}</h1>
+                                    <p className="text-slate-400 font-mono text-base">{asset.id}</p>
+                                </div>
 
-          {/* RIGHT COLUMN: Actions */}
-          <div className="space-y-6">
-               <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
-                   <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Quick Actions</h3>
-                   <div className="space-y-3">
-                       {asset.isQrGenerated ? (
-                           <button onClick={handleDownloadPDF} className="w-full flex items-center justify-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 py-4 rounded-xl font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-200 dark:border-indigo-800">
-                               <Download size={20} /> Download QR PDF
-                           </button>
-                       ) : (
-                           <button onClick={handleGenerateQR} className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-700 text-white py-4 rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors shadow-lg shadow-slate-200 dark:shadow-none">
-                               <QrCode size={20} /> Generate QR
-                           </button>
-                       )}
-                       
-                       <button onClick={() => navigate('/assets/edit', { id: asset.id })} className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 py-4 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
-                           <Edit size={20} /> Edit Details
-                       </button>
+                                <div className="grid grid-cols-2 gap-y-4 gap-x-8 pt-4 border-t border-slate-50 dark:border-slate-700">
+                                    <div>
+                                        <p className="text-xs text-slate-400 uppercase font-bold mb-1">Serial Number</p>
+                                        <p className="font-medium text-slate-700 dark:text-slate-200">{asset.serialNumber}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 uppercase font-bold mb-1">Added By</p>
+                                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-medium">
+                                            <User size={16} className="text-indigo-500" /> {asset.addedBy}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 uppercase font-bold mb-1">Created Date</p>
+                                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-medium">
+                                            <Calendar size={16} className="text-indigo-500" /> {new Date(asset.createdDate).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-slate-400 uppercase font-bold mb-1">Last Verification</p>
+                                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-medium">
+                                            <CheckCircle size={16} className="text-emerald-500" /> {asset.lastVerifiedDate ? new Date(asset.lastVerifiedDate).toLocaleDateString() : 'Never'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                       <button onClick={() => setShowDeleteModal(true)} className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 text-red-500 py-4 rounded-xl font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mt-4">
-                           <Trash2 size={20} /> Remove Asset
-                       </button>
-                   </div>
-               </div>
+                    {/* History Panel */}
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden transition-colors duration-200">
+                        <div className="p-6 border-b border-slate-100 dark:border-slate-700">
+                            <h3 className="font-bold text-slate-800 dark:text-white">Verification History</h3>
+                        </div>
+                        <div className="p-6">
+                            <div className="p-6">
+                                {(() => {
+                                    // Combine global logs and embedded logs to ensure we show everything
+                                    const globalLogs = logs.filter(l => l.assetId === asset.id);
+                                    const embeddedLogs = asset.VerificationLogs || asset.verificationLogs || [];
 
-               {/* QR Preview Card */}
-               {asset.isQrGenerated && (
-                   <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center text-center transition-colors duration-200">
-                       <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">QR Preview</h3>
-                       <div className="bg-white p-4 rounded-xl shadow-inner border border-slate-100 mb-4">
-                           <QRCode value={JSON.stringify({ assetId: asset.id, url: window.location.href })} size={140} />
-                       </div>
-                       <p className="text-xs text-slate-400">Scan to verify this asset.</p>
-                   </div>
-               )}
-          </div>
-      </div>
+                                    // Deduplicate by ID
+                                    const uniqueLogs = [...new Map([...globalLogs, ...embeddedLogs].map(item => [item.id, item])).values()];
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}></div>
-              <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-sm w-full relative z-10 shadow-2xl animate-in fade-in zoom-in duration-200 border border-slate-100 dark:border-slate-700">
-                  <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <AlertTriangle size={32} />
-                  </div>
-                  <h3 className="text-xl font-bold text-center text-slate-800 dark:text-white mb-2">Delete Asset?</h3>
-                  <p className="text-center text-slate-500 dark:text-slate-400 mb-8">This action cannot be undone. This asset and all its history will be permanently removed.</p>
-                  <div className="flex gap-3">
-                      <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-xl transition-colors">
-                          Cancel
-                      </button>
-                      <button onClick={handleDelete} className="flex-1 py-3 font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition-colors">
-                          Yes, Delete
-                      </button>
-                  </div>
-              </div>
-          </div>
-      )}
-    </div>
-  );
+                                    // Sort by timestamp descending (newest first)
+                                    uniqueLogs.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+                                    if (uniqueLogs.length > 0) {
+                                        return (
+                                            <div className="space-y-4">
+                                                {uniqueLogs.map((log: any) => (
+                                                    <div key={log.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-10 h-10 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-emerald-500 shadow-sm">
+                                                                <CheckCircle size={20} />
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-bold text-slate-700 dark:text-slate-200 text-sm">Verified by {log.verifiedBy}</p>
+                                                                <p className="text-xs text-slate-400">{new Date(log.timestamp).toLocaleString()}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    } else {
+                                        return (
+                                            <div className="text-center py-8 text-slate-400">
+                                                <p>No verification history found.</p>
+                                            </div>
+                                        );
+                                    }
+                                })()}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* RIGHT COLUMN: Actions */}
+                <div className="space-y-6">
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm transition-colors duration-200">
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Quick Actions</h3>
+                        <div className="space-y-3">
+                            {asset.isQrGenerated ? (
+                                <button onClick={handleDownloadPDF} className="w-full flex items-center justify-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 py-4 rounded-xl font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors border border-indigo-200 dark:border-indigo-800">
+                                    <Download size={20} /> Download QR PDF
+                                </button>
+                            ) : (
+                                <button onClick={handleGenerateQR} className="w-full flex items-center justify-center gap-2 bg-slate-900 dark:bg-slate-700 text-white py-4 rounded-xl font-bold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors shadow-lg shadow-slate-200 dark:shadow-none">
+                                    <QrCode size={20} /> Generate QR
+                                </button>
+                            )}
+
+                            <button onClick={() => navigate('/assets/edit', { id: asset.id })} className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 py-4 rounded-xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                <Edit size={20} /> Edit Details
+                            </button>
+
+                            <button onClick={() => setShowDeleteModal(true)} className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 text-red-500 py-4 rounded-xl font-bold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors mt-4">
+                                <Trash2 size={20} /> Remove Asset
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* QR Preview Card */}
+                    {asset.isQrGenerated && (
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-100 dark:border-slate-700 shadow-sm flex flex-col items-center text-center transition-colors duration-200">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">QR Preview</h3>
+                            <div className="bg-white p-4 rounded-xl shadow-inner border border-slate-100 mb-4">
+                                <QRCode value={JSON.stringify({ assetId: asset.id, url: window.location.href })} size={140} />
+                            </div>
+                            <p className="text-xs text-slate-400">Scan to verify this asset.</p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)}></div>
+                    <div className="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-sm w-full relative z-10 shadow-2xl animate-in fade-in zoom-in duration-200 border border-slate-100 dark:border-slate-700">
+                        <div className="w-16 h-16 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <AlertTriangle size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-center text-slate-800 dark:text-white mb-2">Delete Asset?</h3>
+                        <p className="text-center text-slate-500 dark:text-slate-400 mb-8">This action cannot be undone. This asset and all its history will be permanently removed.</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setShowDeleteModal(false)} className="flex-1 py-3 font-semibold text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 rounded-xl transition-colors">
+                                Cancel
+                            </button>
+                            <button onClick={handleDelete} className="flex-1 py-3 font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition-colors">
+                                Yes, Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
