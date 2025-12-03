@@ -11,8 +11,13 @@ router.get('/', authenticateToken, async (req, res) => {
             order: [['createdAt', 'DESC']],
             include: [VerificationLog, Complaint]
         });
+        console.log(`[API] Fetched ${assets.length} assets`); // DEBUG LOG
+        if (assets.length > 0) {
+            console.log('[API] Sample Asset Logs:', JSON.stringify(assets[0].VerificationLogs, null, 2)); // DEBUG LOG
+        }
         res.json(assets);
     } catch (error) {
+        console.error('[API] Error fetching assets:', error); // DEBUG LOG
         res.status(500).json({ message: 'Error fetching assets', error: error.message });
     }
 });

@@ -91,12 +91,36 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
       const assetsRes = await fetch(`${API_URL}/assets`, { headers });
       if (assetsRes.ok) {
         const assetsData = await assetsRes.json();
+        console.log('[AppContext] Raw Assets Data:', assetsData); // DEBUG LOG
+
         setAssets(assetsData);
 
-        // Extract Logs and Complaints from Assets (since they are included in the response)
-        // Handle both PascalCase (from Sequelize) and camelCase
-        const allLogs = assetsData.flatMap((a: any) => a.VerificationLogs || a.verificationLogs || []);
-        const allComplaints = assetsData.flatMap((a: any) => a.Complaints || a.complaints || []);
+        // Robustly extract logs
+        const allLogs: VerificationLog[] = [];
+        const allComplaints: Complaint[] = [];
+
+        if (Array.isArray(assetsData)) {
+          assetsData.forEach((asset: any) => {
+            // Extract Logs
+            if (asset.VerificationLogs && Array.isArray(asset.VerificationLogs)) {
+              allLogs.push(...asset.VerificationLogs);
+            } else if (asset.verificationLogs && Array.isArray(asset.verificationLogs)) {
+              allLogs.push(...asset.verificationLogs);
+            }
+
+            // Extract Complaints
+            if (asset.Complaints && Array.isArray(asset.Complaints)) {
+              allComplaints.push(...asset.Complaints);
+            } else if (asset.complaints && Array.isArray(asset.complaints)) {
+              allComplaints.push(...asset.complaints);
+            }
+          });
+        }
+
+        console.log('[AppContext] Extracted Logs:', allLogs); // DEBUG LOG
+
+        // Sort logs by timestamp descending
+        allLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
         setLogs(allLogs);
         setComplaints(allComplaints);

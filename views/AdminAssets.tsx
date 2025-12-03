@@ -194,11 +194,15 @@ export const AdminAssets = () => {
                         </div>
 
                         <div className="col-span-2 w-full flex md:block justify-between text-sm text-slate-600">
-                            <span className="md:hidden text-slate-400">QR Status:</span>
-                            {asset.isQrGenerated ? (
-                                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md w-fit"><QrCode size={12} /> Generated</span>
+                            <span className="md:hidden text-slate-400">Last Verified:</span>
+                            {asset.lastVerifiedDate ? (
+                                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-semibold bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md w-fit">
+                                    <CheckCircle size={12} /> {new Date(asset.lastVerifiedDate).toLocaleDateString()}
+                                </span>
                             ) : (
-                                <span className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs font-semibold bg-slate-50 dark:bg-slate-700/50 px-2 py-1 rounded-md w-fit">Not Generated</span>
+                                <span className="flex items-center gap-1 text-slate-400 dark:text-slate-500 text-xs font-semibold bg-slate-50 dark:bg-slate-700/50 px-2 py-1 rounded-md w-fit">
+                                    Not Verified
+                                </span>
                             )}
                         </div>
 
