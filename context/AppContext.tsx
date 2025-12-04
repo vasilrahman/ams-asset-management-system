@@ -319,12 +319,17 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
       });
 
       if (res.ok) {
-        const { log } = await res.json();
-        const timestamp = new Date().toISOString();
+        const { log, asset: updatedAsset } = await res.json();
 
-        // Optimistic update or refetch
-        setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, lastVerifiedDate: timestamp, verifiedBy: verifierName } : a)));
+        // Update Assets State with the authoritative updated asset from backend
+        setAssets((prev) => prev.map((a) => (a.id === assetId ? updatedAsset : a)));
+
+        // Update Logs State
+        // We add the new log to the top of the list
         setLogs(prev => [log, ...prev]);
+
+        console.log('[AppContext] Asset Verified:', updatedAsset);
+        console.log('[AppContext] New Log Added:', log);
       }
     } catch (error) {
       console.error('Error verifying asset:', error);

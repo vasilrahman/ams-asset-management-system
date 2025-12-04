@@ -78,23 +78,28 @@ router.post('/:id/verify', authenticateToken, async (req, res) => {
     const timestamp = new Date();
 
     try {
-        // Update asset
+        // 1. Create log first
+        const assetForName = await Asset.findByPk(assetId);
+        const log = await VerificationLog.create({
+            id: `log-${Date.now()}`,
+            assetId,
+            assetName: assetForName.name,
+            verifiedBy: verifierName,
+            timestamp
+        });
+
+        // 2. Update asset details
         await Asset.update(
             { lastVerifiedDate: timestamp, verifiedBy: verifierName },
             { where: { id: assetId } }
         );
 
-        // Create log
-        const asset = await Asset.findByPk(assetId);
-        const log = await VerificationLog.create({
-            id: `log-${Date.now()}`,
-            assetId,
-            assetName: asset.name,
-            verifiedBy: verifierName,
-            timestamp
+        // 3. Fetch complete updated asset with associations
+        const updatedAsset = await Asset.findByPk(assetId, {
+            include: [VerificationLog, Complaint]
         });
 
-        res.json({ message: 'Asset verified', log });
+        res.json({ message: 'Asset verified', log, asset: updatedAsset });
     } catch (error) {
         res.status(500).json({ message: 'Error verifying asset', error: error.message });
     }
